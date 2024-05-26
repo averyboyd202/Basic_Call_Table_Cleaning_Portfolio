@@ -1,0 +1,51 @@
+import pandas as pd
+from faker import Faker
+import random
+import re
+
+# Initialize Faker to generate synthetic data
+fake = Faker()
+
+# Number of records to generate
+num_records = 100
+data = []
+
+# Generate synthetic call data
+for _ in range(num_records):
+    first_name = fake.first_name()
+    last_name = fake.last_name()
+    call_notes = f"Caller {first_name} {last_name} reported an issue with their device."
+    record = {
+        "date": fake.date_time_this_year(),  # Random date within the current year
+        "call_type": random.choice(["technical", "billing", "general"]),  # Random call type
+        "software_version": f"{random.randint(1, 10)}.{random.randint(0, 10)}.{random.randint(0, 10)}",  # Random software version
+        "caller_employee_id": fake.random_int(min=1000, max=9999),  # Random employee ID for the caller
+        "agent_id": fake.random_int(min=1000, max=9999),  # Random agent ID
+        "status": random.choice(["resolved", "unresolved"]),  # Random status
+        "escalation_tier": random.choice([None, "Tier 2"]),  # Random escalation tier
+        "repeat_caller": random.choice([True, False]),  # Random boolean for repeat caller
+        "category": random.choice(["software", "hardware", "network"]),  # Random category
+        "subcategory": random.choice(["installation", "configuration", "troubleshooting"]),  # Random subcategory
+        "caller_notes": call_notes,  # Notes including the caller's first and last name
+        "incident_record": fake.uuid4(),  # Random UUID for the incident record
+    }
+    data.append(record)  # Append the generated record to the data list
+
+# Create a DataFrame from the generated data
+df = pd.DataFrame(data)
+
+# Function to extract first and last names from caller notes
+def extract_names(note):
+    match = re.search(r"Caller (\w+) (\w+)", note)  # Regex to find the pattern "Caller Firstname Lastname"
+    if match:
+        return match.group(1), match.group(2)  # Return the first and last names
+    return None, None  # Return None if the pattern is not found
+
+# Apply the function to the 'caller_notes' column to create new columns 'caller_first_name' and 'caller_last_name'
+df['caller_first_name'], df['caller_last_name'] = zip(*df['caller_notes'].apply(extract_names))
+
+# Display the DataFrame to the user using ace_tools (assuming this is a custom tool for displaying DataFrames)
+import ace_tools as tools; tools.display_dataframe_to_user(name="Synthetic Call Data", dataframe=df)
+
+# Optionally print the first few rows of the DataFrame to verify
+print(df.head())
